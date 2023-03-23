@@ -1,0 +1,62 @@
+#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+	#include "serialize.dkh"
+	#include "website.dkl"
+	#include "conf.dkl"
+
+	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
+	ticket=""
+	factura=""
+	rfc=""
+
+	switch method
+	{
+		case "GET" 
+		{
+			ticket=@@(@http_context,"request/get/ticket")
+			factura=@@(@http_context,"request/get/factura")
+		}
+		case "POST"
+		{
+			rfc=@@(@http_context,"request/post/rfc")
+			ticket=@@(@http_context,"request/post/ticket")
+		}
+	}
+
+	// si el ticket y la factura están vacios
+	if ticket=="" && factura==""
+	{
+		include "buscar.dk"
+		return
+	}
+
+	// si el ticket esta vacio y el metodo es get O el metodo es post y el ticket NO está vacio y el RFC SI está vacio
+	if (method=="GET" && ticket!="") || (method=="POST" && ticket!="" && rfc=="")
+	{
+		include "confirmar.dk"
+		return
+	}
+
+	// si el metodo es post y el ticket y el rfc NO están vacios
+	if method=="POST" && ticket!="" && rfc!=""
+	{
+		include "facturar.dk"
+		return
+	}
+
+	// si el metodo es get y unicamente la factura NO está vacia
+	if method=="GET" && factura!=""
+	{
+		include "resultados.dk"
+		return
+	}
+
+##
+h1{$"Parámetros incorrectos"}
+
+	#$
+	pre{$"#<to.json(@http_context)>"}
+}

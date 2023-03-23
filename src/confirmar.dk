@@ -1,0 +1,278 @@
+#include "dkli.dkh"
+#! 
+module "index.dkl"
+{
+	#include "functions.dkh"
+	#include "serialize.dkh"
+	#include "webcl.dkh"
+
+	new headers
+	{
+		@"Content-type":"application/json"
+	}
+
+	new parametros
+	{
+		@"operacion":"obtener_venta"
+		@"emisor": @rfcEmisor
+		@"folio":ticket
+	}
+
+	content=to.json(parametros) // contiene los elementos del objeto parametro
+	cad=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,content) // cadena de la estructura solicitud http
+
+	ref cad2 = from.json(cad) // genera una cadena en formato Json de la variable cad
+
+	// si la solicitud del servicio es exitosa
+	if @@(cad2,"#success")
+	{
+		message =""
+
+		xml=from.base64(@@(cad2,"data")) // genera el contenido de base 64 a xml
+		
+		ref objXml=parse.xmlStr(xml) // genera un objeto de Xml
+
+		// campos complementarios de la tabla
+		subTotal = @@(objXml, "attributes/SubTotal") // total sin impuestos
+		descuento = field.dstr(objXml,"attributes/Descuento","0.00") 
+		total = @@(objXml, "attributes/Total")  // total real del ticket
+		impuestosTrasladados = "0.00"
+
+		ref nodos=@@(objXml,"&nodes")
+
+		for i=0;i<@count(nodos)
+		{
+			ref nodo=@item(nodos,i)
+
+			objname = @@(nodo,"name")
+
+			if objname=="cfdi:Conceptos"
+			{
+				ref @objconceptos =@@(nodo,"&nodes")
+
+				pintarTabla::
+				{
+					for t=0; t<@count(@objconceptos)
+					{
+						ref nodo = @item(@objconceptos, t)
+						##
+						tr
+						{
+							td{$"#<t+1>"}
+							td{$'#<@@(nodo,"attributes/Descripcion")>'}		
+							td{$'#<format(@@(nodo,"#attributes/Importe"),"$ #,#.00")>'}
+						}
+						##
+					}  
+				}
+			}
+			if objname=="cfdi:Impuestos"
+            {
+                ref objImpuestos=@@(nodo,"&attributes")
+                impuestosTrasladados=field.dstr(objImpuestos,"TotalImpuestosTrasladados","0.00") 
+           	} 
+			// Datos del receptor
+			if objname=="cfdi:Receptor"
+           	{      
+            	rfc=@@(nodo,"attributes/Rfc")
+				codigoPostal=@@(nodo,"attributes/DomicilioFiscalReceptor")
+           	} 
+			// Datos del Emisor
+			if objname=="cfdi:Emisor"
+           	{      
+            	regimenFiscalSelect=@@(nodo,"attributes/RegimenFiscal")
+           	} 
+		}
+	}
+	else
+	{
+		message = @@(cad2,"message")
+	}
+exception
+{
+	using dx
+	{
+		@"success":@false
+		@"data":last_error()
+	}
+	message= @@(dx,"data")
+}
+
+	#$
+	html
+	{
+		head
+		{
+			link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous")
+		}
+		
+		body(onload="myOnLoad()")
+		// body
+		{			
+		// si el mensaje contiene texto, se oculta el div del formulario
+		##
+		if(message=="")
+		{	
+			## 
+			div(class= "d-flex justify-content-center")
+			{
+				div(class= "w-50 mt-4")
+				{
+					div(class= "card container") 
+					{									
+						div(class= "card-body")
+						{				
+							form(id="formFactura" action="#"  method="POST")
+							{
+								input(name="ticket" type="hidden" value="#<ticket>"){$""}
+								input(name="xml" type="hidden" value="#<xml>"){$""}	
+
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"Razón social"}
+									div(class= "col-9 col-md-8")
+									{
+									input(type= "text" class= "form-control" name="razonSocial" placeholder = "Ingrese su Razón Social" minlenght= "1" required= "true"){}
+									}
+								}
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"RFC"}
+									div(class= "col-9 col-md-8")
+									{
+									input(type="text" class="form-control text-uppercase" name="rfc" placeholder="Ingrese su RFC" value="#<rfc>" minlenght= "12" maxlenght="13" required= "true"){}
+									}
+								}
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"Uso CFDI"}
+									div(class= "col-9 col-md-8")
+									{								
+										select(class ="form-control form-select" name="usoCfdi" id="usoCfdi" required="true")
+										{
+											option(value="" selected="true"){$"Seleccione el uso del CFDI"}
+										}
+									}
+								}
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"Régimen Fiscal"}
+									div(class= "col-9 col-md-8")
+									{
+										input(id="regimenSelected" type="hidden" value="#<regimenFiscalSelect>"){$""}		
+											
+										select(class ="form-control form-select" name="regimenFiscal" id="regimenFiscal" required="true")
+										{
+											option(value=""){ $"Seleccione el régimen fiscal"}
+										}	
+									}
+								}
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"Código postal"}
+									div(class= "col-9 col-md-8")
+									{
+									input(type= "text" class= "form-control"  name="cp" placeholder="Ingrese su código postal" value="#<codigoPostal>" minlenght="1" maxlenght="5" required= "true"){}
+									}
+								}
+								div(class= "mb-3 row") 
+								{
+									label(class= "col-3 col-md-4 col-form-label fw-semibold"){ $"Correo electrónico"}
+									div(class= "col-9 col-md-8")
+									{
+									input(type= "email" class= "form-control"  name="correo" placeholder = "Ingrese su correo electrónico(Opcional)" minlenght= "1" maxlenght="40"){}
+									}
+								}
+								div(class= "text-center pt-4")
+								{
+									button(type= "submit" class="btn btn-primary" onclick=""){$"Facturar"}
+								}
+								
+							}
+						}
+					}
+				}
+			}
+
+			div(class = "d-flex justify-content-center")
+			{
+				div(class= "w-50 mt-4")
+				{
+					div(class= "card container") 
+					{
+						div(class= "card-body")
+						{					
+							table(class= "table table-hover")
+							{
+								thead
+								{
+									tr
+									{
+										th( scope="col"){$"#"}
+										th( scope="col"){$"Descripción"}
+										th( scope="col"){$"Importe"}
+									}
+								}
+								tbody
+								{
+									// si el mensaje no está vacio muestra el mensaje de error
+									##
+										do pintarTabla()
+									##
+								}
+							}
+								p(class= "text-end fw-semibold bg-light p-2"){$'Subtotal: #<format(subTotal,"$ #,#.00")>'}
+								p(class= "text-end fw-semibold bg-light p-2"){$'Descuento: #<format(descuento,"$ #,#.00")>'}
+								p(class= "text-end fw-semibold bg-light p-2"){$'Impuestos: #<format(impuestosTrasladados,"$ #,#.00")>'}
+								p(class= "text-end fw-semibold bg-light p-2"){$'Total: #<format(total,"$ #,#.00")>'}
+						}
+					}
+				}
+			}
+			## // DIV Html
+		} 
+		else 
+		{
+		##
+			div(class = "d-flex justify-content-center")
+            {
+                div(class= "w-25 mt-4")
+                {
+					div(class= "card shadow p-3 mb-5 bg-body rounded") 
+					{
+						img (src="/images/error_compress.jpg" datasrc="/images/error.gif" class="card-img-top" alt="#"){$""}
+						div(class="card-body")
+						{
+							h4(class="card-title"){$"¡Oops!"}
+							##
+							if message=="{-99} El ticket ya ha sido timbrado.[Ln= 38]"
+							{
+								##
+								h5{$"El ticket ya ha sido facturado."}
+								##
+							}
+							else
+							{
+								##
+								h5{$"El folio no se encontró."}
+								h5{$"Le sugerimos que revise su información e intente nuevamente."}
+								##
+							}
+							##
+							div(class="text-end pt-2")
+							{
+								button(type="button" onclick="history.back()" class="btn btn-primary"){$"Regresar"}
+							}                 
+						}     
+					}
+				}
+			}
+			##
+		}
+		## // If
+		// script(src= "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"){$""}
+		script(src= "js/main.js"){$""}
+		}
+	}
+	## // html
+}

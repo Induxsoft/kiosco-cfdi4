@@ -1,0 +1,160 @@
+#include "dkli.dkh"
+#! 
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "webcl.dkh"
+    // #include "descargar.dk"
+
+    @factura=field.dstr(@http_context,"request/get/factura","sinfactura") 
+
+    @correo=field.dstr(@http_context,"request/get/correo","sincorreo") 
+
+    // Descargar en Zip XML y PDF 
+    new parametros
+    {
+        @"cti":@CuentaTimbrado
+        @"pwd":@ContrasenaCuentaTimbrado
+        @"doc":@factura
+        @"res":"ziplnk"
+        @"ctaTimb":"#"
+    }
+
+	cad=http.post("https://factudesk.api.induxsoft.net/comprobantes/descargar/",parametros)
+
+    ref cad2 = from.json(cad)
+
+    if @@(cad2,"#success")
+	{
+        link = @@(cad2,"data/link")
+    }
+  
+    message =""
+
+    // Enviar correo
+    if @correo != ""
+    {
+        // descarga y guarda el Zip(Xml y PDF timbrado) en el proyecto
+        do http.download(link, path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
+
+        plantilla = file.rtext(@dirPlantilla)
+        plantilla = replace(plantilla, "@Asunto", "CFDI 40")
+        plantilla = replace(plantilla, "@mensaje", "Enhorabuena, su CFDI 40 ha sido generado con éxito y adjuntado por este medio.")
+        new mail
+        {
+            @"server": @serverEmail
+            @"port": @portEmail  //Número de puerto
+            @"user": @userEmail //Usuario del servidor SMTP
+            @"password": @passwordEmail     //Contraseña del usuario SMTP
+            @"from":@remitenteEmail //Remitente del mensaje con el formato: nombre a mostrar <direccion@correo>
+            @"to":@correo //Destinatario de correo
+            @"subject":"CFDI 40" 
+            @"body": plantilla
+        }
+        //Se adjunta en el email el Xml timbrado
+        ref archivos=list.create()
+        do list.add(archivos,path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
+        mail<"attatchments*">:archivos
+
+        do smtp.send(mail)
+    }
+
+    exception
+    {
+        using dx
+        {
+            @"success":@false
+            @"data":last_error()
+        }
+        message = @@(dx,"data")
+    }
+    
+    #$
+    html
+    {
+        head
+        {
+            link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous")
+        }
+        body(onload="myOnload()")
+        {
+        ##
+		if(message=="")
+		{	
+            ##
+            div(class = "d-flex justify-content-center")
+            {
+                div(class= "w-25 mt-4")
+                {
+                    div(class= "card shadow p-3 mb-5 bg-body rounded") 
+                    {
+                        img (src="/images/success_compress.jpg" datasrc="/success/error.gif" class="card-img-top" alt="#"){$""}
+                        div(class="card-body")
+                        {
+                            h5(class="card-title text-center"){$"¡Enhorabuena!"}
+                            p(class="card-text"){$"Su ticket ha sido facturado con éxito"}
+                            p(class="card-text"){$"Revise en descargas"}
+                            ##
+                            if (@correo != "")
+                            {
+                                ##
+                                 p(class="card-text"){$'Revise su corrreo electronico: #<@correo>'}
+                                 ##
+                            }
+                            ##
+                            div(class="text-end pt-2")
+                            {
+                                button(type="button" onclick="window.location.href='/'" class="btn btn-success"){$"Regresar"}
+                            }                 
+                        }     
+                    }     
+                  
+                }
+            }
+            ##
+        }
+        else
+        {
+            ##
+            div(class = "d-flex justify-content-center")
+            {
+                div(class= "w-25 mt-4")
+                {
+                    div(class= "card shadow p-3 mb-5 bg-body rounded") 
+                    {
+                        img (src="/images/error_compress.jpg" datasrc="/images/error.gif" class="card-img-top" alt="#"){$""}
+                        div(class="card-body")
+                        {
+                            h5(class="card-title text-center"){$"¡Oops!!"}
+                            p(class="card-text"){$"Ha ocurrido un error, intentelo de nuevo, Por favor."}
+                            div(class="text-end pt-2")
+                            {
+                                button(type="button" onclick="window.location.href='/'" class="btn btn-primary"){$"Regresar"}
+                            }                 
+                        }     
+                    }     
+                  
+                }
+            }
+            ##
+        }
+        ##
+            // script(src= "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"){$""}
+            script(src= "js/main.js"){$""}
+
+            #$
+            script(type="text/javascript")
+            {
+            $"
+                function myOnload() 
+                {
+                    window.location.href = '#<link>';
+                }
+                    
+            "
+            }
+            ##
+        }
+    } 
+}

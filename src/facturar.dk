@@ -1,0 +1,211 @@
+#include "dkli.dkh"
+#! 
+module "facturar.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "webcl.dkh"
+
+    xml=@@(@http_context,"request/post/xml")
+    razonSocial=@@(@http_context,"request/post/razonSocial")
+    usoCfdi=@@(@http_context,"request/post/usoCfdi")
+    rfcReceptor=toupper(@@(@http_context,"request/post/rfc"))
+    regimenFiscal=@@(@http_context,"request/post/regimenFiscal")
+    codigoPostal=@@(@http_context,"request/post/cp")
+    @correo=@@(@http_context,"request/post/correo")
+
+    
+    ref objXml=parse.xmlStr(xml) // genera un objeto a partir del XML 
+
+    ref nodos=@@(objXml,"&nodes") 
+
+    for i=0;i<@count(nodos)
+    {
+        ref nodo=@item(nodos,i)
+        objname = @@(nodo,"name")
+        if objname=="cfdi:Receptor"
+           	{      
+            	rfc=@@(nodo,"attributes/Rfc")
+                // ref prueba = @@(nodo,"&attributes")
+           	} 
+    }
+    
+    folioComprobante = @@(objXml, "attributes/Folio")
+
+	// jsonXml=to.json(objXml) //transforma el objeto a formato Json //SOLO SE USA PARA PROBAR
+    
+    recorridoNodos::&elemento, tagname
+    {
+        if isnull(elemento) {return @null}
+        if isnull(@@(elemento, "&nodes")) { return @null}
+        ref nodos=@@(elemento,"&nodes")
+
+        for i=0;i<@count(nodos)
+        {
+            ref nodo=@item(nodos,i)
+            if @@(nodo,"name") == tagname
+            {
+                return nodo
+            }
+        }
+    }
+
+    reemplazarAttributoNodo::&elemento, tagname, &child
+    {
+        if isnull(elemento) { return @null }
+        if isnull(@@(elemento,"&nodes")) { return @null }
+
+        ref nodos=@@(elemento,"&nodes")
+
+        for i=0; i<@count(nodos)
+        {
+            ref nodo=@item(nodos,i)
+            if @@(nodo,"name") == tagname
+            { 
+                do list.set(@@(elemento,"&nodes"),i,child)
+                return child
+            }
+        }
+
+        return @null
+    }
+
+
+ref receptor = recorridoNodos(objXml,"cfdi:Receptor")
+
+// se cambia el valor del atributo RFC, Código Postal, Uso Cfdi del receptor, Nombre(razón social), regimenFiscal
+receptor<"attributes/Rfc">:rfcReceptor
+receptor<"attributes/DomicilioFiscalReceptor">:codigoPostal
+receptor<"attributes/UsoCFDI">:usoCfdi
+receptor<"attributes/Nombre">:razonSocial
+receptor<"attributes/RegimenFiscalReceptor">:regimenFiscal
+
+// Se agrega el nodo Exportación con valor por default 01
+objXml<"attributes/Exportacion">:"01"
+
+// Se actualiza la hora y fecha
+horaXml=date_str(now(),"HH:mm:ss")
+fechaXml=date_str(now(),"yyyy-MM-dd")
+fechaYHora=fechaXml+"T"+horaXml
+objXml<"attributes/Fecha">:fechaYHora
+
+
+ref listanueva = reemplazarAttributoNodo(objXml,"cfdi:Receptor", receptor)
+
+xmlCfdi = to.Xml(objXml) // XML con los cambios CFDI 40
+
+// do file.wtext("/usr/devkron/web/kiosko.test/prueba.xml", xmlCfdi) //crea el archivo Xml sin timbrar
+
+
+// TIMBRADO
+
+ref @lib_Timbrado=_import_library("induxsoft.cfdi.v40.dll")
+
+do _map_function(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante","Timbrar","timbreCfdiV40","System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String","*")
+
+do _map_function(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante","fromXml","C.FromXml","System.String","*")
+
+timbrarXML::xmlCfdi
+{
+    ref objCfdi=_new(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante")
+
+    do _invoke(objCfdi,"C.FromXml",xmlCfdi)
+
+    ref res=_invoke(objCfdi,"timbreCfdiV40",@CuentaTimbrado,@ContrasenaCuentaTimbrado,@RutaCadenaOriginal,@RutaCertificado,@RutaLLave,@ContrasenaCertificado,"","scode")
+
+    using Datos
+    {
+        @"timbro":@true
+        @"uuid":@@(res,"uuid")
+        @"xml":@@(res,"xml")
+    }
+
+    return Datos
+}
+
+ref timbradoXml =  timbrarXml(xmlCfdi)
+
+if parse.bool(@@(timbradoXml,"timbro"))       
+{
+    cadTimbrado=from.base64(@@(timbradoXml,"xml"))
+
+    ref objXmlTimbrado=parse.xmlStr(cadTimbrado) // objeto del CFDI Timbrado
+
+    xmlCfdiTimbrado = to.Xml(objXmlTimbrado) // XML con los cambios CFDI 40
+
+    // Mover un ticket cuando ha sido facturado
+    @uuid=@@(timbradoXml,"uuid")
+
+    //  do file.wtext("/usr/devkron/web/kiosko.test/timbrados/"+@uuid+".xml", xmlCfdiTimbrado) //crea el archivo Xml
+
+    new parametrosMover
+    {
+        @"operacion":"venta_facturada"
+        @"emisor":@rfcEmisor
+        @"folio": ticket
+        @"uuid": @uuid
+    }
+
+    new headers{@"Content-type":"application/json"}
+
+    contentMover=to.json(parametrosMover) // contiene los elementos del objeto parametro
+    cadMover=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,contentMover) // cadena de solicitud venta facturada  
+
+@http_context<"response/headers/location">:"http://kiosko.test/?factura="+@uuid+"&correo="+@correo
+
+}
+
+
+errorMessage = ""
+
+exception
+{
+    using dx
+    {
+        @"success":@false
+        @"data":last_error()
+    }
+    errorMessage= @@(dx,"data")
+}
+
+    #$
+    html
+    {
+        head
+        {
+            link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous")
+        }
+        body
+        {
+            div(class = "d-flex justify-content-center")
+            {
+                div(class= "w-25 mt-4")
+                {
+                    ## // SI EXISTE ALGUN MENSAJE DE ERROR EN LA EXCEPCIÓN
+                    if errorMessage != ""
+                    {
+                        ##
+                        div(class= "card shadow p-3 mb-5 bg-body rounded") 
+                        {
+                            img (src="/images/error.gif" class="card-img-top" alt="#"){$""}
+                            div(class="card-body")
+                            {
+                                h5(class="card-title"){$"¡Oops!"}
+                                p(class="card-text"){$'#<errorMessage>'}
+                                div(class="text-end")
+                                {
+                                    button(type="button" onclick="history.back()" class="btn btn-primary"){$"Regresar"}
+                                }                 
+                            }     
+                        }
+                        ##
+                    }
+                    ##
+                }
+            }
+            // script(src= "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"){$""}
+            script(src= "js/main.js"){$""}
+        }
+    }
+    ##
+}
