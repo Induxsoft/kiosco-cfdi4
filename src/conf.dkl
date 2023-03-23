@@ -4,7 +4,7 @@ module "conf.dkl"
 {
     #include "functions.dkh"
     //PARAMETROS DE LA FACTURA
-
+    @url_root="http://kiosko.test"
     @pathKiosko = "/usr/devkron/web/kiosko.test"  //Ruta absoluta del Kiosko Web
     @rfcEmisor = "EWE1709045U0"  // RFC Emisor
     @CuentaTimbrado = "xipova69"  // Usuario de la cuenta de timbrado

@@ -5,6 +5,7 @@ module "facturar.dkl"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "webcl.dkh"
+    #include "conf.dkl"
 
     xml=@@(@http_context,"request/post/xml")
     razonSocial=@@(@http_context,"request/post/razonSocial")
@@ -151,7 +152,7 @@ if parse.bool(@@(timbradoXml,"timbro"))
     contentMover=to.json(parametrosMover) // contiene los elementos del objeto parametro
     cadMover=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,contentMover) // cadena de solicitud venta facturada  
 
-@http_context<"response/headers/location">:"http://kiosko.test/?factura="+@uuid+"&correo="+@correo
+@http_context<"response/headers/location">:@url_root+"/?factura="+@uuid+"&correo="+@correo
 
 }
 
