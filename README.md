@@ -6,3 +6,5 @@ Es una herramienta segura, fácil,configurable y flexible de usar que sirve para
       * Disponible para windows y linux.
        * **Link de descarga:** <a href="https://devkron.org">https://devkron.org</a>
       * **Documentación:** <a href="https://docs.induxsoft.net/es/devkron/">https://docs.induxsoft.net/es/devkron/</a>
+ * **Coloque el contenido de la carpeta src en la carpeta física del servidor web.**
+
