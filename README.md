@@ -18,7 +18,7 @@ Es una herramienta segura, fácil,configurable y flexible de usar que sirve para
     * Cuenta de timbres(usuario y contraseña).
     * Certificado, llave privada y contraseña.
     * Servidor smtp para envio de correo.
- * **Configure e inicie servicision de fastcgi y servidor web.**
+ * **Configure e inicie servicios de fastcgi y servidor web.**
     * **Documentación:** https://docs.induxsoft.net/es/devkron/
 
 
