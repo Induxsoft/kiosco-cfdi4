@@ -36,6 +36,8 @@ module "index.dkl"
     if @correo != ""
     {
         // descarga y guarda el Zip(Xml y PDF timbrado) en el proyecto
+        do dir.ensure(path.concat(@pathKiosko,"timbrados"))
+        
         do http.download(link, path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
 
         plantilla = file.rtext(@dirPlantilla)
