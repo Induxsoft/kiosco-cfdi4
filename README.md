@@ -5,4 +5,4 @@ Es una herramienta segura, fácil,configurable y flexible de usar que sirve para
   * **Descargar y configurar Devkron.**
       * Disponible para windows y linux.
        * **Link de descarga:** <a href="https://devkron.org">https://devkron.org</a>
-      * **Documentaión:** <a href="https://docs.induxsoft.net/es/devkron/">https://devkron.org</a>
+      * **Documentaión:** <a href="https://docs.induxsoft.net/es/devkron/">ir</a>
