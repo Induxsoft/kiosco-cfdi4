@@ -3,5 +3,6 @@ Es una herramienta segura, fácil,configurable y flexible de usar que sirve para
 ## Puesta en marcha.
   * **Clone este repositorio.**
   * **Descargar y configurar Devkron.**
-      * **Link de descarga:** <a href="https://devkron.org">https://devkron.org</a>
+      * Disponible para windows y linux.
+       * **Link de descarga:** <a href="https://devkron.org">https://devkron.org</a>
       * 
