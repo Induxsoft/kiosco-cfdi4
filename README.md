@@ -4,11 +4,11 @@ Permite la emision de CFDi versión 4.0.
 ## Puesta en marcha.
   * **Clone este repositorio.**
   * **Descargar y configurar Devkron.**
-      * Disponible para windows y linux.
+      * Disponible para Windows y Linux.
       * **Link de descarga:** <a href="https://devkron.org">https://devkron.org</a>
       * **Documentación:** <a href="https://docs.induxsoft.net/es/devkron/">https://docs.induxsoft.net/es/devkron/</a>
  * **Coloque el contenido de la carpeta src de este repositorio en la carpeta física de su servidor web (generalmente dentro de la carpeta raíz de Devkron/web).**
- * **Copie el archivo(API) induxsoft.cfdi.v40.dll a la carpeta raíz de devkron(ubicación de binarios).**
+ * **Copie el archivo(API) induxsoft.cfdi.v40.dll a la carpeta raíz de Devkron(ubicación de binarios).**
      * Clone repositorio: https://github.com/Induxsoft/cfdi-4.0-api
      * **Carpeta /C#/.Net 5.0/.-** Disponible para Linux y Windows(.Net Core).
      * **Carpeta /C#/.Net Framework 4.5/.-** Disponible para Windows(.Net Framework).
