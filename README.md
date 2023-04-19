@@ -16,5 +16,7 @@ Permite la emision de CFDi versión 4.0.
     * Servidor smtp para envio de correo.
  * **Configure e inicie servicios de fastcgi y servidor web.**
     * **Documentación:** https://docs.induxsoft.net/es/devkron/
+ 
+ **Recomendamos usar PractiHost "El Hosting de Devkron Oficial de Induxsoft" :** https://practihost.com/
 
 
