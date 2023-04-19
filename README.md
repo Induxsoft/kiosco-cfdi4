@@ -13,7 +13,6 @@ Permite la emision de CFDi versión 4.0.
     * Ruta de la carpeta fisica del sitio web.
     * Datos de emisor(RFC)
     * Cuenta de timbres(usuario y contraseña).
-    * Certificado, llave privada y contraseña.
     * Servidor smtp para envio de correo.
  * **Configure e inicie servicios de fastcgi y servidor web.**
     * **Documentación:** https://docs.induxsoft.net/es/devkron/
