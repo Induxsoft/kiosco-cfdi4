@@ -9,18 +9,7 @@ module "conf.dkl"
     @rfcEmisor = "EWE1709045U0"  // RFC Emisor
     @CuentaTimbrado = "xipova69"  // Usuario de la cuenta de timbrado
     @ContrasenaCuentaTimbrado = "123456" // Contraseña de la cuenta de timbrado
-    @RutaCadenaOriginal = path.concat(@pathKiosko,"credenciales/xslt/cadenaoriginal.xslt")
-    @RutaCertificado = path.concat(@pathKiosko,"credenciales/CSD_ESCUELA_WILSON_ESQUIVEL_SA_DE_CV__EWE1709045U0_20190617_132205s.cer")
-    @RutaLLave = path.concat(@pathKiosko,"credenciales/CSD_ESCUELA_WILSON_ESQUIVEL_SA_DE_CV__EWE1709045U0_20190617_132205.key")
-    @ContrasenaCertificado = "12345678a"
-
-    // @rfcEmisor = "EWE1709045U0"
-    // @CuentaTimbrado = "xipova69"
-    // @ContrasenaCuentaTimbrado = "123456"
-    // @RutaCadenaOriginal = "/usr/devkron/web/kiosko.test/credenciales/xslt/cadenaoriginal.xslt"
-    // @RutaCertificado = "/usr/devkron/web/kiosko.test/credenciales/CSD_ESCUELA_WILSON_ESQUIVEL_SA_DE_CV__EWE1709045U0_20190617_132205s.cer"
-    // @RutaLLave = "/usr/devkron/web/kiosko.test/credenciales/CSD_ESCUELA_WILSON_ESQUIVEL_SA_DE_CV__EWE1709045U0_20190617_132205.key"
-    // @ContrasenaCertificado = "12345678a"
+    @NumeroCertificado="" ///número de certificado a utilizar para el timbrado
 
     // PARAMETROS EMAIL
     @serverEmail= "send.smtp.com"

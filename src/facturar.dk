@@ -95,30 +95,32 @@ ref listanueva = reemplazarAttributoNodo(objXml,"cfdi:Receptor", receptor)
 
 xmlCfdi = to.Xml(objXml) // XML con los cambios CFDI 40
 
-// do file.wtext("/usr/devkron/web/kiosko.test/prueba.xml", xmlCfdi) //crea el archivo Xml sin timbrar
 
-
-// TIMBRADO
-
-ref @lib_Timbrado=_import_library("induxsoft.cfdi.v40.dll")
-
-do _map_function(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante","Timbrar","timbreCfdiV40","System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String","*")
-
-do _map_function(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante","fromXml","C.FromXml","System.String","*")
 
 timbrarXML::xmlCfdi
 {
-    ref objCfdi=_new(@lib_Timbrado,"induxsoft.cfdi.v40.Comprobante")
+    
+    urltimbrar="https://factudesk.api.induxsoft.net/comprobantes/sellar-y-timbrar/"
 
-    do _invoke(objCfdi,"C.FromXml",xmlCfdi)
+    new data
+    {
+        @"cti":@CuentaTimbrado
+        @"pwd":@ContrasenaCuentaTimbrado
+        @"xml":to.base64(xmlCfdi)
+        @"ncer":@NumeroCertificado
+    }
+    new h{@"Content-Type":"application/json;charset=utf-8"}
 
-    ref res=_invoke(objCfdi,"timbreCfdiV40",@CuentaTimbrado,@ContrasenaCuentaTimbrado,@RutaCadenaOriginal,@RutaCertificado,@RutaLLave,@ContrasenaCertificado,"","scode")
+    res_service=http.request(urltimbrar,"POST",h,to.json(data))
+
+    ref res=from.json(res_service)
+    if not(@@(res,"#success")){do rise_error(99,@@(res,"message"))}
 
     using Datos
     {
         @"timbro":@true
-        @"uuid":@@(res,"uuid")
-        @"xml":@@(res,"xml")
+        @"uuid":@@(res,"data/uuid")
+        @"xml":@@(res,"data/xml")
     }
 
     return Datos

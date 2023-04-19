@@ -17,28 +17,32 @@ module "index.dkl"
         @"cti":@CuentaTimbrado
         @"pwd":@ContrasenaCuentaTimbrado
         @"doc":@factura
-        @"res":"ziplnk"
+        @"res":"zipraw"
+        // @"res":"ziplnk"
         @"ctaTimb":"#"
     }
 
-	cad=http.post("https://factudesk.api.induxsoft.net/comprobantes/descargar/",parametros)
+	// cad=http.post("https://factudesk.api.induxsoft.net/comprobantes/descargar/",parametros)
 
-    ref cad2 = from.json(cad)
+    // ref cad2 = from.json(cad)
 
-    if @@(cad2,"#success")
-	{
-        link = @@(cad2,"data/link")
-    }
+    // if @@(cad2,"#success")
+	// {
+    //     link = @@(cad2,"data/link")
+    // }
   
     message =""
 
     // Enviar correo
+    link=""
     if @correo != ""
     {
-        // descarga y guarda el Zip(Xml y PDF timbrado) en el proyecto
-        do dir.ensure(path.concat(@pathKiosko,"timbrados"))
         
-        do http.download(link, path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
+
+        // descarga y guarda el Zip(Xml y PDF timbrado) en el proyecto
+        // do dir.ensure(path.concat(@pathKiosko,"timbrados"))
+        
+        // do http.download(link, path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
 
         plantilla = file.rtext(@dirPlantilla)
         plantilla = replace(plantilla, "@Asunto", "CFDI 40")
@@ -54,12 +58,22 @@ module "index.dkl"
             @"subject":"CFDI 40" 
             @"body": plantilla
         }
-        //Se adjunta en el email el Xml timbrado
-        ref archivos=list.create()
-        do list.add(archivos,path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
-        mail<"attatchments*">:archivos
+        using parametros
+        {
+            @"smtp":to.json(mail)
+        }
+         new h{@"Content-Type":"application/json;charset=utf-8"}
+        res=http.request("https://factudesk.api.induxsoft.net/comprobantes/enviar/","POST",h,to.json(parametros))
+        ref result=from.json(res)
+        if not(@@(result,"#success")){do rise_error(99,@@(result,"$message"))}
 
-        do smtp.send(mail)
+        link=@@(result,"data/link")
+        // //Se adjunta en el email el Xml timbrado
+        // ref archivos=list.create()
+        // do list.add(archivos,path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
+        // mail<"attatchments*">:archivos
+
+        // do smtp.send(mail)
     }
 
     exception
@@ -129,7 +143,7 @@ module "index.dkl"
                         div(class="card-body")
                         {
                             h5(class="card-title text-center"){$"¡Oops!!"}
-                            p(class="card-text"){$"Ha ocurrido un error, intentelo de nuevo, Por favor."}
+                            p(class="card-text"){$"Ha ocurrido un error, intentelo de nuevo, Por favor.#<message>"}
                             div(class="text-end pt-2")
                             {
                                 button(type="button" onclick="window.location.href='/'" class="btn btn-primary"){$"Regresar"}
@@ -151,7 +165,11 @@ module "index.dkl"
             $"
                 function myOnload() 
                 {
-                    window.location.href = '#<link>';
+                    if('#<link>'!='')
+                    {
+                        window.location.href = '#<link>';
+                    }
+                    
                 }
                     
             "
