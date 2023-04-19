@@ -6,9 +6,9 @@ module "conf.dkl"
     //PARAMETROS DE LA FACTURA
     @url_root="http://mi-host"
     @pathKiosko = "/usr/devkron/web/kiosko.test"  //Ruta absoluta del Kiosko Web
-    @rfcEmisor = "EWE1709045U0"  // RFC Emisor
-    @CuentaTimbrado = "xipova69"  // Usuario de la cuenta de timbrado
-    @ContrasenaCuentaTimbrado = "123456" // Contraseña de la cuenta de timbrado
+    @rfcEmisor = ""  // RFC Emisor
+    @CuentaTimbrado = ""  // Usuario de la cuenta de timbrado
+    @ContrasenaCuentaTimbrado = "" // Contraseña de la cuenta de timbrado
     @NumeroCertificado="" ///número de certificado a utilizar para el timbrado
 
     // PARAMETROS EMAIL

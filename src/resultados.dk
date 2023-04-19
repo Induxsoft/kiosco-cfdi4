@@ -22,14 +22,6 @@ module "index.dkl"
         @"ctaTimb":"#"
     }
 
-	// cad=http.post("https://factudesk.api.induxsoft.net/comprobantes/descargar/",parametros)
-
-    // ref cad2 = from.json(cad)
-
-    // if @@(cad2,"#success")
-	// {
-    //     link = @@(cad2,"data/link")
-    // }
   
     message =""
 
@@ -37,12 +29,6 @@ module "index.dkl"
     link=""
     if @correo != ""
     {
-        
-
-        // descarga y guarda el Zip(Xml y PDF timbrado) en el proyecto
-        // do dir.ensure(path.concat(@pathKiosko,"timbrados"))
-        
-        // do http.download(link, path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
 
         plantilla = file.rtext(@dirPlantilla)
         plantilla = replace(plantilla, "@Asunto", "CFDI 40")
@@ -60,7 +46,7 @@ module "index.dkl"
         }
         using parametros
         {
-            @"smtp":to.json(mail)
+            @"smtp*":mail
         }
          new h{@"Content-Type":"application/json;charset=utf-8"}
         res=http.request("https://factudesk.api.induxsoft.net/comprobantes/enviar/","POST",h,to.json(parametros))
@@ -68,12 +54,7 @@ module "index.dkl"
         if not(@@(result,"#success")){do rise_error(99,@@(result,"$message"))}
 
         link=@@(result,"data/link")
-        // //Se adjunta en el email el Xml timbrado
-        // ref archivos=list.create()
-        // do list.add(archivos,path.concat(@pathKiosko,"timbrados/"+@factura+".zip"))
-        // mail<"attatchments*">:archivos
 
-        // do smtp.send(mail)
     }
 
     exception
