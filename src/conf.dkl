@@ -12,11 +12,11 @@ module "conf.dkl"
     @NumeroCertificado="" ///número de certificado a utilizar para el timbrado
 
     // PARAMETROS EMAIL
-    @serverEmail= "send.smtp.com"
-    @portEmail = "2082"   //Número de puerto
-    @userEmail = "capacitacion@induxsoft.com" //Usuario del servidor SMTP
-    @passwordEmail = "Istocolmo123="      //Contraseña del usuario SMTP
-    @remitenteEmail = "Escuela Wilson Esquivel <capacitacion@induxsoft.com>" //Remitente del mensaje con el formato: nombre a mostrar <direccion@correo>
+    @serverEmail= ""//servidor smtp
+    @portEmail = ""   //Número de puerto
+    @userEmail = "" //Usuario del servidor SMTP
+    @passwordEmail = ""      //Contraseña del usuario SMTP
+    @remitenteEmail = "" //Remitente del mensaje con el formato: nombre a mostrar <direccion@correo>
 
 
     @dirPlantilla = path.concat(@pathKiosko,"plantillaMensaje.html")
