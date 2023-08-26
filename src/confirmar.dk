@@ -122,7 +122,7 @@ exception
 					{									
 						div(class= "card-body")
 						{				
-							form(id="formFactura" action="#"  method="POST")
+							form(id="formFactura" action="#"  method="POST" onsubmit="document.querySelector('#btnFacturar').disabled=true;")
 							{
 								input(name="ticket" type="hidden" value="#<ticket>"){$""}
 								input(name="xml" type="hidden" value="#<xml>"){$""}	
@@ -185,7 +185,7 @@ exception
 								}
 								div(class= "text-center pt-4")
 								{
-									button(type= "submit" class="btn btn-primary" onclick=""){$"Facturar"}
+									button(type= "submit" id="btnFacturar" class="btn btn-primary" onclick=""){$"Facturar"}
 								}
 								
 							}
