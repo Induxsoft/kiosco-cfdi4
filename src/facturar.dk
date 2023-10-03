@@ -25,7 +25,7 @@ module "facturar.dkl"
         new body
         {
             @"operacion":"obtener_venta"
-            @"emisor": @@(@http_context,"request/post/emisor")
+            @"emisor": @rfcEmisor // @@(@http_context,"request/post/emisor")
             @"folio": @@(@http_context,"request/post/ticket")
         }
 
