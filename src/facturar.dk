@@ -15,6 +15,94 @@ module "facturar.dkl"
     codigoPostal=@@(@http_context,"request/post/cp")
     @correo=@@(@http_context,"request/post/correo")
 
+    validarFactura::
+    {
+        new header
+        {
+            @"Content-type":"application/json"
+        }
+
+        new body
+        {
+            @"operacion":"obtener_venta"
+            @"emisor": @@(@http_context,"request/post/emisor")
+            @"folio": @@(@http_context,"request/post/ticket")
+        }
+
+        params = to.json(body)
+        ref response = from.json(http.request("https://factudesk.api.induxsoft.net/pos/", "POST", header, params))
+
+        if not(@@(response,"#success")) { do rise_error(99, @@(response,"$message")) }
+    }
+    do validarFactura()
+
+    module "map_functions"
+    {
+        @numero_a_letras_found = @false
+        numero_a_letras = "induxsoft_dkl_NumeroAletrasCorregido.dll"
+        
+        if file.exists(numero_a_letras)
+        {
+            ref lib_numeros = _import_library(numero_a_letras)
+
+            do _map_function(lib_numeros,"induxsoft_dkl_NumeroAletrasCorregido.NumerosEnLetras","ParteEntera","Int2Ltr","System.Decimal","$")
+            do _map_function(lib_numeros,"induxsoft_dkl_NumeroAletrasCorregido.NumerosEnLetras","ParteDecimal","Dec2Ltr","System.Decimal","$")
+
+            @numero_a_letras_found = @true
+            exception{/*ignore*/}
+        }
+    }
+
+    NumEnLetras::value
+    {
+        if not(@numero_a_letras_found) { return "" }
+
+        return Int2Ltr(value) + " " + Dec2Ltr(value)
+    }
+
+    establecerAddenda::&cfdi,&etiquetas
+    {
+        new cfdi.addenda
+        {
+            @"name": "cfdi:Addenda"
+            @"attributes*": record.create()
+            @"nodes*": list.create()
+            @"meta*": record.create()
+            @"type": "element"
+        }
+
+        new induxsoft.addenda
+        {
+            @"name": "induxsoft:addenda"
+            new member "attributes"
+            {
+                @"xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+                @"xsi:schemaLocation": "http://dev.induxsoft.net/xsd/cfdi/addendas/addendabasica.xsd http://dev.induxsoft.net/xsd/cfdi/addendas/addendabasica.xsd"
+                @"xmlns:induxsoft": "http://dev.induxsoft.net/xsd/cfdi/addendas/addendabasica.xsd"
+                @"notas": ""
+            }
+            @"nodes*": list.create()
+            @"meta*": record.create()
+            @"type": "element"
+        }
+
+        go foreach.fobj(value:attributes) with(etiquetas)
+        {
+            new induxsoft.etiqueta
+            {
+                @"name": "induxsoft:etiqueta"
+                @"attributes*": attributes
+                @"nodes*": list.create()
+                @"meta*": record.create()
+                @"type": "element"
+            }
+
+            do list.add(@@(induxsoft.addenda,"&nodes"), induxsoft.etiqueta)
+        }
+
+        do list.add(@@(cfdi.addenda,"&nodes"), induxsoft.addenda)
+        do list.add(@@(cfdi,"&nodes"), cfdi.addenda)
+    }
     
     ref objXml=parse.xmlStr(xml) // genera un objeto a partir del XML 
 
@@ -32,6 +120,7 @@ module "facturar.dkl"
     }
     
     folioComprobante = @@(objXml, "attributes/Folio")
+    totalComprobante = @@(objXml, "#attributes/Total")
 
 	// jsonXml=to.json(objXml) //transforma el objeto a formato Json //SOLO SE USA PARA PROBAR
     
@@ -71,105 +160,116 @@ module "facturar.dkl"
         return @null
     }
 
+    ref receptor = recorridoNodos(objXml,"cfdi:Receptor")
 
-ref receptor = recorridoNodos(objXml,"cfdi:Receptor")
+    // se cambia el valor del atributo RFC, Código Postal, Uso Cfdi del receptor, Nombre(razón social), regimenFiscal
+    receptor<"attributes/Rfc">:rfcReceptor
+    receptor<"attributes/DomicilioFiscalReceptor">:codigoPostal
+    receptor<"attributes/UsoCFDI">:usoCfdi
+    receptor<"attributes/Nombre">:razonSocial
+    receptor<"attributes/RegimenFiscalReceptor">:regimenFiscal
 
-// se cambia el valor del atributo RFC, Código Postal, Uso Cfdi del receptor, Nombre(razón social), regimenFiscal
-receptor<"attributes/Rfc">:rfcReceptor
-receptor<"attributes/DomicilioFiscalReceptor">:codigoPostal
-receptor<"attributes/UsoCFDI">:usoCfdi
-receptor<"attributes/Nombre">:razonSocial
-receptor<"attributes/RegimenFiscalReceptor">:regimenFiscal
+    // Se agrega el nodo Exportación con valor por default 01
+    objXml<"attributes/Exportacion">:"01"
 
-// Se agrega el nodo Exportación con valor por default 01
-objXml<"attributes/Exportacion">:"01"
-
-// Se actualiza la hora y fecha
-horaXml=date_str(now(),"HH:mm:ss")
-fechaXml=date_str(now(),"yyyy-MM-dd")
-fechaYHora=fechaXml+"T"+horaXml
-objXml<"attributes/Fecha">:fechaYHora
-
-
-ref listanueva = reemplazarAttributoNodo(objXml,"cfdi:Receptor", receptor)
-
-xmlCfdi = to.Xml(objXml) // XML con los cambios CFDI 40
+    // Se actualiza la hora y fecha
+    // horaXml=date_str(now(),"HH:mm:ss")
+    // fechaXml=date_str(now(),"yyyy-MM-dd")
+    // fechaYHora=fechaXml+"T"+horaXml
+    // objXml<"attributes/Fecha">:fechaYHora
 
 
+    ref listanueva = reemplazarAttributoNodo(objXml,"cfdi:Receptor", receptor)
 
-timbrarXML::xmlCfdi
-{
-    
-    urltimbrar="https://factudesk.api.induxsoft.net/comprobantes/sellar-y-timbrar/"
-
-    new data
+    new tags
     {
-        @"cti":@CuentaTimbrado
-        @"pwd":@ContrasenaCuentaTimbrado
-        @"xml":to.base64(xmlCfdi)
-        @"ncer":@NumeroCertificado
-    }
-    new h{@"Content-Type":"application/json;charset=utf-8"}
-
-    res_service=http.request(urltimbrar,"POST",h,to.json(data))
-
-    ref res=from.json(res_service)
-    if not(@@(res,"#success")){do rise_error(99,@@(res,"message"))}
-
-    using Datos
-    {
-        @"timbro":@true
-        @"uuid":@@(res,"data/uuid")
-        @"xml":@@(res,"data/xml")
+        new member @"NumLetraTotalDocumento"
+        {
+            @"id": "NumLetraTotalDocumento"
+            @"titulo": "Importe con letras"
+            @"valor": NumEnLetras(totalComprobante) + " PESOS MEXICANOS"
+        }
     }
 
-    return Datos
-}
+    if not(@numero_a_letras_found) { do record.remove(tags,"NumLetraTotalDocumento") }
 
-ref timbradoXml =  timbrarXml(xmlCfdi)
+    do establecerAddenda(objXml, tags)
 
-if parse.bool(@@(timbradoXml,"timbro"))       
-{
-    cadTimbrado=from.base64(@@(timbradoXml,"xml"))
+    xmlCfdi = to.Xml(objXml) // XML con los cambios CFDI 40
 
-    ref objXmlTimbrado=parse.xmlStr(cadTimbrado) // objeto del CFDI Timbrado
-
-    xmlCfdiTimbrado = to.Xml(objXmlTimbrado) // XML con los cambios CFDI 40
-
-    // Mover un ticket cuando ha sido facturado
-    @uuid=@@(timbradoXml,"uuid")
-
-    //  do file.wtext("/usr/devkron/web/kiosko.test/timbrados/"+@uuid+".xml", xmlCfdiTimbrado) //crea el archivo Xml
-
-    new parametrosMover
+    timbrarXML::xmlCfdi
     {
-        @"operacion":"venta_facturada"
-        @"emisor":@rfcEmisor
-        @"folio": ticket
-        @"uuid": @uuid
+        
+        urltimbrar="https://factudesk.api.induxsoft.net/comprobantes/sellar-y-timbrar/"
+
+        new data
+        {
+            @"cti":@CuentaTimbrado
+            @"pwd":@ContrasenaCuentaTimbrado
+            @"xml":to.base64(xmlCfdi)
+            @"ncer":@NumeroCertificado
+        }
+        new h{@"Content-Type":"application/json;charset=utf-8"}
+
+        res_service=http.request(urltimbrar,"POST",h,to.json(data))
+
+        ref res=from.json(res_service)
+        if not(@@(res,"#success")){do rise_error(99,@@(res,"message"))}
+
+        using Datos
+        {
+            @"timbro":@true
+            @"uuid":@@(res,"data/uuid")
+            @"xml":@@(res,"data/xml")
+        }
+
+        return Datos
     }
 
-    new headers{@"Content-type":"application/json"}
+    ref timbradoXml =  timbrarXml(xmlCfdi)
 
-    contentMover=to.json(parametrosMover) // contiene los elementos del objeto parametro
-    cadMover=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,contentMover) // cadena de solicitud venta facturada  
-
-@http_context<"response/headers/location">:@url_root+"/?factura="+@uuid+"&correo="+@correo
-
-}
-
-
-errorMessage = ""
-
-exception
-{
-    using dx
+    if parse.bool(@@(timbradoXml,"timbro"))       
     {
-        @"success":@false
-        @"data":last_error()
+        cadTimbrado=from.base64(@@(timbradoXml,"xml"))
+
+        ref objXmlTimbrado=parse.xmlStr(cadTimbrado) // objeto del CFDI Timbrado
+
+        xmlCfdiTimbrado = to.Xml(objXmlTimbrado) // XML con los cambios CFDI 40
+
+        // Mover un ticket cuando ha sido facturado
+        @uuid=@@(timbradoXml,"uuid")
+
+        //  do file.wtext("/usr/devkron/web/kiosko.test/timbrados/"+@uuid+".xml", xmlCfdiTimbrado) //crea el archivo Xml
+
+        new parametrosMover
+        {
+            @"operacion":"venta_facturada"
+            @"emisor":@rfcEmisor
+            @"folio": ticket
+            @"uuid": @uuid
+        }
+
+        new headers{@"Content-type":"application/json"}
+
+        contentMover=to.json(parametrosMover) // contiene los elementos del objeto parametro
+        cadMover=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,contentMover) // cadena de solicitud venta facturada  
+
+        @http_context<"response/headers/location">:@url_root+"/?factura="+@uuid+"&correo="+@correo
+
     }
-    errorMessage= @@(dx,"data")
-}
+
+
+    errorMessage = ""
+
+    exception
+    {
+        using dx
+        {
+            @"success":@false
+            @"data":last_error()
+        }
+        errorMessage= @@(dx,"data")
+    }
 
     #$
     html
