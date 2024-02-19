@@ -191,7 +191,7 @@ module "facturar.dkl"
         }
     }
 
-    if not(@numero_a_letras_found) { do record.remove(tags,"NumLetraTotalDocumento") }
+    if not(@numero_a_letras_found) { do field.remove(tags,"NumLetraTotalDocumento") }
 
     do establecerAddenda(objXml, tags)
 
