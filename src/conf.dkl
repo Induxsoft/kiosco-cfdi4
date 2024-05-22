@@ -13,6 +13,7 @@ module "conf.dkl"
 
     // PARAMETROS EMAIL
     @serverEmail= ""//servidor smtp
+    @sslEmail = @false
     @portEmail = ""   //Número de puerto
     @userEmail = "" //Usuario del servidor SMTP
     @passwordEmail = ""      //Contraseña del usuario SMTP
