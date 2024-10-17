@@ -19,7 +19,7 @@ module "index.dkl"
 	}
 
 	content=to.json(parametros) // contiene los elementos del objeto parametro
-	cad=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,content) // cadena de la estructura solicitud http
+	cad=http.request(@svc_pos,"POST",headers,content) // cadena de la estructura solicitud http
 
 	ref cad2 = from.json(cad) // genera una cadena en formato Json de la variable cad
 

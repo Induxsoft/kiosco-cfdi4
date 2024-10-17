@@ -14,6 +14,7 @@ module "facturar.dkl"
     regimenFiscal=@@(@http_context,"request/post/regimenFiscal")
     codigoPostal=@@(@http_context,"request/post/cp")
     @correo=@@(@http_context,"request/post/correo")
+    @svc_pos_default = "https://factudesk.api.induxsoft.net/pos/"
 
     validarFactura::
     {
@@ -30,7 +31,7 @@ module "facturar.dkl"
         }
 
         params = to.json(body)
-        ref response = from.json(http.request("https://factudesk.api.induxsoft.net/pos/", "POST", header, params))
+        ref response = from.json(http.request(@svc_pos, "POST", header, params))
 
         if not(@@(response,"#success")) { do rise_error(99, @@(response,"$message")) }
     }
@@ -244,20 +245,22 @@ module "facturar.dkl"
         new parametrosMover
         {
             @"operacion":"venta_facturada"
-            @"emisor":@rfcEmisor
+            @"emisor": @rfcEmisor
             @"folio": ticket
             @"uuid": @uuid
         }
+        if @svc_pos != @svc_pos_default { parametrosMover<"xml"> : @@(timbradoXml,"$xml") }
 
         new headers{@"Content-type":"application/json"}
 
         contentMover=to.json(parametrosMover) // contiene los elementos del objeto parametro
-        cadMover=http.request("https://factudesk.api.induxsoft.net/pos/","POST",headers,contentMover) // cadena de solicitud venta facturada  
+        cadMover=http.request(@svc_pos,"POST",headers,contentMover) // cadena de solicitud venta facturada
+
+        ref resp = from.json(cadMover)
+        if not(@@(resp,"#success")) { do rise_error(99,@@(resp,"$message")) }
 
         @http_context<"response/headers/location">:@url_root+"/?factura="+@uuid+"&correo="+@correo
-
     }
-
 
     errorMessage = ""
 
