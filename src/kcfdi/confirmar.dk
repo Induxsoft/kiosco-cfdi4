@@ -16,11 +16,13 @@ module "index.dkl"
 		@"operacion":"obtener_venta"
 		@"emisor": @rfcEmisor
 		@"folio":ticket
+		@"nombre_emisor":@nombreEmisor
+        @"regimen_emisor":@regimenEmisor
 	}
 
 	content=to.json(parametros) // contiene los elementos del objeto parametro
 	cad=http.request(@svc_pos,"POST",headers,content) // cadena de la estructura solicitud http
-
+	
 	ref cad2 = from.json(cad) // genera una cadena en formato Json de la variable cad
 
 	// si la solicitud del servicio es exitosa

@@ -4,16 +4,20 @@ module "conf.dkl"
 {
     #include "functions.dkh"
     //PARAMETROS DE LA FACTURA
-    @url_root="http://mi-host" //Host del Kiosko Web
-    @pathKiosko = "/usr/devkron/web/kiosko.test"  //Ruta absoluta del Kiosko Web
+    @url_root="http://kiosko.localhost/" //Host del Kiosko Web
+    @pathKiosko = "C:/devkron/web/kiosko.localhost"  //Ruta absoluta del Kiosko Web
     // URL del servicio de integración con el punto de venta (POS)
     // DOC: https://docs.induxsoft.net/es/api/cloud/factudesk/pos.md
-    @svc_pos = "https://factudesk.api.induxsoft.net/pos/"
+    // @svc_pos = "https://208886-hostcomand2026.v12.induxsoft.net/pos/"
+    // @svc_pos = "https://208886-hostcomand2026.v12.induxsoft.net/mxcfdi/_services/pos/"
+    @svc_pos = "http://v12.localhost//mxcfdi/_services/pos/"
     @rfcEmisor = "" //RFC Emisor
     @CuentaTimbrado = "" //Usuario de la cuenta de timbrado
     @ContrasenaCuentaTimbrado = "" //Contraseña de la cuenta de timbrado
     @NumeroCertificado = "" //Número de certificado a utilizar para el timbrado
-
+    @regimenEmisor=""
+    @nombreEmisor=""
+    
     // PARAMETROS EMAIL
     @serverEmail= "" //servidor smtp
     @sslEmail = @false
