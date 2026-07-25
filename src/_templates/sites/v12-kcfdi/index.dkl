@@ -5,13 +5,17 @@ module "index.dkl"
     #include "functions.dkh"
 	#include "serialize.dkh"
 	#include "website.dkl"
+	#include "dbr.dkh"
 	#include "conf.dkl"
+	#include "lib.dk"
 
+	do setVarsGlobals()
+	
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
 	ticket=""
 	factura=""
 	rfc=""
-
+	
 	switch method
 	{
 		case "GET" 

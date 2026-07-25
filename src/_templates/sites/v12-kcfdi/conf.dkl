@@ -26,5 +26,18 @@ module "conf.dkl"
     @passwordEmail = "" //Contraseña del usuario SMTP
     @remitenteEmail = "" //Remitente del mensaje con el formato: nombre a mostrar <direccion@correo>
 
-    @dirPlantilla = path.concat(@pathKiosko,"plantillaMensaje.html")
+    /*
+     * Summary:
+     * - Interfaz de usuario
+    */
+    @kcfdi_title="KIOSKO CFDI"
+    @kcfdi_background = "deepskyblue"
+    @kcfdi_background_card = "cornflowerblue"
+    @kcfdi_color="red"
+    @kcfdi_imagen="" //URL
+    @kcfdi_header="" // Cabecera 
+    @kcfdi_footer="" // footer
+    @dirPlantilla =""
+
+    @host_config_type = 1
 }

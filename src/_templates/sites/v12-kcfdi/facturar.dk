@@ -5,7 +5,6 @@ module "facturar.dkl"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "webcl.dkh"
-    #include "conf.dkl"
 
     xml=@@(@http_context,"request/post/xml")
     razonSocial=@@(@http_context,"request/post/razonSocial")

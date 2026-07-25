@@ -1,0 +1,99 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    ref @config_host=@null
+    ref @db=@null
+
+    function GetHot()
+    {
+        meth = ifstr(parse.bool(@@(@http_context,"request/headers/HTTPS")),"https","http")
+        host = @@(@http_context, "request/headers/HTTP_HOST")
+        port = @@(@http_context, "request/headers/SERVER_PORT")
+        // prms = ifstr(with_params,@@(context, "request/headers/REQUEST_URI"),"")
+
+        return meth+"://"+host
+    }
+
+    parse_json::json,json_def
+    {
+        return from.json(json)
+
+        exception{}
+
+        return from.json(json_def)
+    }
+
+    getCfgHost::
+    {
+        host_name = @@(@http_context,"$request/headers/HTTP_HOST")
+        if trim(host_name)==""{host_name=@@(@http_context,"$request/headers/SERVER_NAME")}
+        cfg_name = host_name + ".json"
+        cfg_file = path.concat("_config",cfg_name)
+        if file.exists(cfg_file)
+        {
+            return parse_json(file.rtext(cfg_file),"{}")
+        }
+
+        exception{}
+
+        return @null
+    }
+    getQname::
+    {
+        if isnull(@config_host){ref @config_host=getCfgHost()}
+        return @@(@config_host,"$qname")
+    }
+
+    openDB::
+    {
+        if isnull(@db){ref @db=dbr.open(getQname())}
+
+        return @db
+    }
+    get_config_db::
+    {
+        ref db=openDB()
+        _host=@@(@http_context,"$request/headers/HTTP_HOST")
+        str_config=dbr.str(db,"select config from host_site_config where type="+str(@host_config_type)+" and host='"+_host+"'",@null)
+        if trim(str_config) == ""{return record.create()}
+        
+        ref json= from.json(str_config)
+        return json
+        exception
+        {
+            do pop_exception()
+        }
+
+        return record.create()
+    }
+
+    setVarsGlobals::
+    {
+        ref cfg=get_config_db()
+        if @count(list.create_from_fields(cfg)) < 1{return}
+
+        if trim(@@(cfg,"$url_servicio_pos"))!=""{@svc_pos = trim(@@(cfg,"$url_servicio_pos"))}
+        if trim(@@(cfg,"$rfc_emisor"))!=""{@rfcEmisor = trim(@@(cfg,"$rfc_emisor"))}
+        if trim(@@(cfg,"$cuenta_timbrado"))!=""{@CuentaTimbrado = trim(@@(cfg,"$cuenta_timbrado"))}
+        if trim(@@(cfg,"$contrasena_cuenta_timbrado"))!=""{@ContrasenaCuentaTimbrado = trim(@@(cfg,"$contrasena_cuenta_timbrado"))}
+        if trim(@@(cfg,"$numero_certificado"))!=""{@NumeroCertificado = trim(@@(cfg,"$numero_certificado"))}
+        if trim(@@(cfg,"$regimen_fiscal_emisor"))!=""{@regimenEmisor = trim(@@(cfg,"$regimen_fiscal_emisor"))}
+        if trim(@@(cfg,"$nombre_emisor"))!=""{@nombreEmisor = trim(@@(cfg,"$nombre_emisor"))}
+
+        /*
+         * Summary:
+         * - configuración para el servidor SMPT
+        */
+        if trim(@@(cfg,"$servidor_smtp"))!=""{@serverEmail = trim(@@(cfg,"$servidor_smtp"))}
+        if trim(@@(cfg,"$usar_ssl"))!=""{@sslEmail = parse.bool(@@(cfg,"$usar_ssl"))}
+        if trim(@@(cfg,"$puerto_smtp"))!=""{@portEmail = trim(@@(cfg,"$puerto_smtp"))}
+        if trim(@@(cfg,"$usuario_smtp"))!=""{@userEmail = trim(@@(cfg,"$usuario_smtp"))}
+        if trim(@@(cfg,"$contrasena_smtp"))!=""{@passwordEmail = trim(@@(cfg,"$contrasena_smtp"))}
+        if trim(@@(cfg,"$remitente_correo"))!=""{@remitenteEmail = trim(@@(cfg,"$remitente_correo"))}
+
+        @url_root=path.concat(GetHot(),"/")
+        @pathKiosko=@@(@http_context,"$request/headers/DOCUMENT_ROOT")
+        @dirPlantilla = path.concat(@pathKiosko,"plantillaMensaje.html")
+    }
+}
