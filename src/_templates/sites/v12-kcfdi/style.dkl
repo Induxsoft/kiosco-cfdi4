@@ -1,0 +1,41 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    styles=""
+    if trim(@kcfdi_background)!=""
+    {
+        styles="body{background:#<@kcfdi_background> !important;}
+        button{background:#<@kcfdi_background> !important;}"
+    }
+    if trim(@kcfdi_background_card)!=""
+    {
+        styles=styles +".card{background:#<@kcfdi_background_card> !important;}"
+    }
+    if trim(@kcfdi_color) !=""
+    {
+        styles=styles + "
+        p,
+        span,
+        label,
+        a,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        li,
+        td,
+        th {
+            color: #<@kcfdi_color> !important;
+        }
+        "
+    }
+    if trim(@kcfdi_imagen) !=""
+    {
+        styles=styles + "body{background-image: url(#<@kcfdi_imagen>) !important;}"
+    }
+    @static_style=@static_style + ftext(styles)
+    @static_style='<style>'+@static_style+'</style>'
+}

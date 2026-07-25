@@ -17,7 +17,7 @@ module "conf.dkl"
     @NumeroCertificado = "" //Número de certificado a utilizar para el timbrado
     @regimenEmisor=""
     @nombreEmisor=""
-    
+    @lugar_expedicion=""
     // PARAMETROS EMAIL
     @serverEmail= "" //servidor smtp
     @sslEmail = @false
@@ -39,5 +39,6 @@ module "conf.dkl"
     @kcfdi_footer="" // footer
     @dirPlantilla =""
 
+    @static_style=""
     @host_config_type = 1
 }

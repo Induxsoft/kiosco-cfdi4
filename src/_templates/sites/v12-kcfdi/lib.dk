@@ -80,6 +80,20 @@ module ""
         if trim(@@(cfg,"$numero_certificado"))!=""{@NumeroCertificado = trim(@@(cfg,"$numero_certificado"))}
         if trim(@@(cfg,"$regimen_fiscal_emisor"))!=""{@regimenEmisor = trim(@@(cfg,"$regimen_fiscal_emisor"))}
         if trim(@@(cfg,"$nombre_emisor"))!=""{@nombreEmisor = trim(@@(cfg,"$nombre_emisor"))}
+        if trim(@@(cfg,"$lugar_expedicion"))!=""{@lugar_expedicion=trim(@@(cfg,"$lugar_expedicion"))}
+
+        /*
+         * Summary:
+         * - configuración de estilos
+        */
+        
+        if trim(@@(cfg,"$kcfdi_title"))!=""{@kcfdi_title=trim(@@(cfg,"$kcfdi_title"))}
+        if trim(@@(cfg,"$kcfdi_background"))!=""{@kcfdi_background=trim(@@(cfg,"$kcfdi_background"))}
+        if trim(@@(cfg,"$kcfdi_background_card"))!=""{@kcfdi_background_card=trim(@@(cfg,"$kcfdi_background_card"))}
+        if trim(@@(cfg,"$kcfdi_color"))!=""{@kcfdi_color=trim(@@(cfg,"$kcfdi_color"))}
+        if trim(@@(cfg,"$kcfdi_imagen"))!=""{@kcfdi_imagen=trim(@@(cfg,"$kcfdi_imagen"))}
+        if trim(@@(cfg,"$kcfdi_header"))!=""{@kcfdi_header=trim(@@(cfg,"$kcfdi_header"))}
+        if trim(@@(cfg,"$kcfdi_footer"))!=""{@kcfdi_footer=trim(@@(cfg,"$kcfdi_footer"))}
 
         /*
          * Summary:

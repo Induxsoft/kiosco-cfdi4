@@ -1,4 +1,6 @@
 #include "dkli.dkh"
+#set "meta-xml-declaration" ""
+
 #!
 module "index.dkl"
 {
@@ -10,6 +12,8 @@ module "index.dkl"
 	#include "lib.dk"
 
 	do setVarsGlobals()
+
+	#include "style.dkl"
 	
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
 	ticket=""
@@ -29,7 +33,7 @@ module "index.dkl"
 			ticket=@@(@http_context,"request/post/ticket")
 		}
 	}
-
+	
 	// si el ticket y la factura están vacios
 	if ticket=="" && factura==""
 	{
@@ -57,10 +61,7 @@ module "index.dkl"
 		include "resultados.dk"
 		return
 	}
-
-##
-h1{$"Parámetros incorrectos"}
-
 	#$
+	h1{$"Parámetros incorrectos"}
 	pre{$"#<to.json(@http_context)>"}
 }

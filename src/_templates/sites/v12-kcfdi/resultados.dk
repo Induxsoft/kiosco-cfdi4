@@ -5,10 +5,8 @@ module "index.dkl"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "webcl.dkh"
-    // #include "descargar.dk"
 
     @factura=field.dstr(@http_context,"request/get/factura","sinfactura") 
-
     @correo=field.dstr(@http_context,"request/get/correo","sincorreo") 
 
     // Descargar en Zip XML y PDF 
@@ -20,6 +18,7 @@ module "index.dkl"
         @"res":"zipraw"
         // @"res":"ziplnk"
         @"ctaTimb":"#"
+        @"to":@correo //Destinatario de correo
     }
 
   
@@ -47,11 +46,15 @@ module "index.dkl"
         
         if @sslEmail { mail<"protocol">:"ssl" }
 
-        using parametros
+        if trim(@serverEmail) !=""
         {
-            @"smtp*":mail
+            using parametros
+            {
+                @"smtp*":mail
+            }
         }
-         new h{@"Content-Type":"application/json;charset=utf-8"}
+        
+        new h{@"Content-Type":"application/json;charset=utf-8"}
         res=http.request("https://factudesk.api.induxsoft.net/comprobantes/enviar/","POST",h,to.json(parametros))
         ref result=from.json(res)
         if not(@@(result,"#success")){do rise_error(99,@@(result,"$message"))}
@@ -79,67 +82,68 @@ module "index.dkl"
         }
         body(onload="myOnload()")
         {
-        ##
-		if(message=="")
-		{	
+            $'#<@kcfdi_header>'
             ##
-            div(class = "d-flex justify-content-center")
-            {
-                div(class= "w-25 mt-4")
+            if message==""
+            {	
+                ##
+                div(class = "d-flex justify-content-center")
                 {
-                    div(class= "card shadow p-3 mb-5 bg-body rounded") 
+                    div(class= "w-25 mt-4")
                     {
-                        img (src="/images/success_compress.jpg" datasrc="/success/error.gif" class="card-img-top" alt="#"){$""}
-                        div(class="card-body")
+                        div(class= "card shadow p-3 mb-5 rounded") // bg-body
                         {
-                            h5(class="card-title text-center"){$"¡Enhorabuena!"}
-                            p(class="card-text"){$"Su ticket ha sido facturado con éxito"}
-                            p(class="card-text"){$"Revise en descargas"}
-                            ##
-                            if (@correo != "")
+                            img (src="/images/success_compress.jpg" datasrc="/success/error.gif" class="card-img-top" alt="#"){$""}
+                            div(class="card-body")
                             {
+                                h5(class="card-title text-center"){$"¡Enhorabuena!"}
+                                p(class="card-text"){$"Su ticket ha sido facturado con éxito"}
+                                p(class="card-text"){$"Revise en descargas"}
                                 ##
-                                 p(class="card-text"){$'Revise su corrreo electronico: #<@correo>'}
-                                 ##
-                            }
-                            ##
-                            div(class="text-end pt-2")
-                            {
-                                button(type="button" onclick="window.location.href='/'" class="btn btn-success"){$"Regresar"}
-                            }                 
+                                if @correo != ""
+                                {
+                                    ##
+                                    p(class="card-text"){$'Revise su corrreo electronico: #<@correo>'}
+                                    ##
+                                }
+                                ##
+                                div(class="text-end pt-2")
+                                {
+                                    button(type="button" onclick="window.location.href='/'" class="btn btn-success border-0"){$"Regresar"}
+                                }                 
+                            }     
                         }     
-                    }     
-                  
+                    
+                    }
                 }
+                ##
             }
-            ##
-        }
-        else
-        {
-            ##
-            div(class = "d-flex justify-content-center")
+            else
             {
-                div(class= "w-25 mt-4")
+                ##
+                div(class = "d-flex justify-content-center")
                 {
-                    div(class= "card shadow p-3 mb-5 bg-body rounded") 
+                    div(class= "w-25 mt-4")
                     {
-                        img (src="/images/error_compress.jpg" datasrc="/images/error.gif" class="card-img-top" alt="#"){$""}
-                        div(class="card-body")
+                        div(class= "card shadow p-3 mb-5 bg-body rounded") 
                         {
-                            h5(class="card-title text-center"){$"¡Oops!!"}
-                            p(class="card-text"){$"Ha ocurrido un error, intentelo de nuevo, Por favor.#<message>"}
-                            div(class="text-end pt-2")
+                            img (src="/images/error_compress.jpg" datasrc="/images/error.gif" class="card-img-top" alt="#"){$""}
+                            div(class="card-body")
                             {
-                                button(type="button" onclick="window.location.href='/'" class="btn btn-primary"){$"Regresar"}
-                            }                 
+                                h5(class="card-title text-center"){$"¡Oops!!"}
+                                p(class="card-text"){$"Ha ocurrido un error, intentelo de nuevo, Por favor.#<message>"}
+                                div(class="text-end pt-2")
+                                {
+                                    button(type="button" onclick="window.location.href='/'" class="btn btn-primary"){$"Regresar"}
+                                }                 
+                            }     
                         }     
-                    }     
-                  
+                    
+                    }
                 }
+                ##
             }
             ##
-        }
-        ##
             // script(src= "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"){$""}
             script(src= "js/main.js"){$""}
 
@@ -158,7 +162,9 @@ module "index.dkl"
                     
             "
             }
-            ##
+            $'
+			#<@kcfdi_footer>
+			#<@static_style>'
         }
     } 
 }
