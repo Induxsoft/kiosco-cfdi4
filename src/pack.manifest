@@ -1,6 +1,6 @@
 {
 	"id":"kiosko-cfdi4",
 	"installable":["kiosko-cfdi4"],
-	"version":"1.0.2",
+	"version":"1.0.3",
 	"schema_ver":"1.0.11"
 }

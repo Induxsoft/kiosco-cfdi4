@@ -31,9 +31,9 @@ module "conf.dkl"
      * - Interfaz de usuario
     */
     @kcfdi_title="KIOSKO CFDI"
-    @kcfdi_background = "deepskyblue"
-    @kcfdi_background_card = "cornflowerblue"
-    @kcfdi_color="red"
+    @kcfdi_background = ""
+    @kcfdi_background_card = ""
+    @kcfdi_color=""
     @kcfdi_imagen="" //URL
     @kcfdi_header="" // Cabecera 
     @kcfdi_footer="" // footer
