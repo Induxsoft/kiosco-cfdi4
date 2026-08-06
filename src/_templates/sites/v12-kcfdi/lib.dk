@@ -109,5 +109,36 @@ module ""
         @url_root=path.concat(GetHot(),"/")
         @pathKiosko=@@(@http_context,"$request/headers/DOCUMENT_ROOT")
         @dirPlantilla = path.concat(@pathKiosko,"plantillaMensaje.html")
+
+        ticket=ifstr(trim(@@(@http_context,"request/get/ticket"))!="",trim(@@(@http_context,"request/get/ticket")),trim(@@(@http_context,"request/post/ticket")))
+        if ticket !=""{do search_codpos_cc_by_ticket(ticket)}
+    }
+    search_codpos_cc_by_ticket::ticket
+    {
+        if trim(ticket) == "" || not(file.exists("precfdi4lib.dll")){return}
+
+        ref lib_precfdi = _import_library("precfdi4lib.dll")
+
+        do _map_function(lib_precfdi, "precfdi4lib.proc", "setDatabase", "ticket.set_db", "*System.Object", "void")
+        do _map_function(lib_precfdi, "precfdi4lib.proc", "DecodeTicket", "ticket.decode_folio", "System.String, System.Boolean", "#") 
+
+        ref db=openDB()
+        tkt_pk = ticket.decode_folio(ticket, @false)
+        if tkt_pk < 1{return}
+        
+        sql="SELECT ifnull(d.codpos,'') FROM venta v
+        INNER JOIN cconsumo cc ON v.icconsumo=cc.sys_pk
+        INNER JOIN domicilio d ON cc.uf_domiciliocfd =d.sys_pk
+        WHERE v.sys_pk=@ticket;"
+
+        new p{@"ticket":tkt_pk}
+
+        codpos_cc=trim(dbr.str(db,sql,p))
+        if codpos_cc != ""{@lugar_expedicion=codpos_cc}
+        
+        exception
+        {
+            do pop_exception()
+        }
     }
 }
